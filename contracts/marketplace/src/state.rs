@@ -176,6 +176,7 @@ pub struct BidIndicies<'a> {
     pub collection: MultiIndex<'a, Addr, Bid, BidKey>,
     pub collection_token_id: MultiIndex<'a, (Addr, TokenId), Bid, BidKey>,
     pub collection_price: MultiIndex<'a, (Addr, u128), Bid, BidKey>,
+    pub collection_token_price: MultiIndex<'a, (Addr, TokenId, u128), Bid, BidKey>,
     pub bidder: MultiIndex<'a, Addr, Bid, BidKey>,
     // Cannot include `Timestamp` in index, converted `Timestamp` to `seconds` and stored as `u64`
     pub bidder_expires_at: MultiIndex<'a, (Addr, u64), Bid, BidKey>,
@@ -187,6 +188,7 @@ impl<'a> IndexList<Bid> for BidIndicies<'a> {
             &self.collection,
             &self.collection_token_id,
             &self.collection_price,
+            &self.collection_token_price,
             &self.bidder,
             &self.bidder_expires_at,
         ];
@@ -210,6 +212,11 @@ pub fn bids<'a>() -> IndexedMap<'a, BidKey, Bid, BidIndicies<'a>> {
             |_pk: &[u8], d: &Bid| (d.collection.clone(), d.price.u128()),
             "bids",
             "bids__collection_price",
+        ),
+        collection_token_price: MultiIndex::new(
+            |_pk: &[u8], d: &Bid| (d.collection.clone(), d.token_id, d.price.u128()),
+            "bids",
+            "bids__collection_token_price",
         ),
         bidder: MultiIndex::new(
             |_pk: &[u8], d: &Bid| d.bidder.clone(),

@@ -145,6 +145,20 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             start_before,
             limit,
         )?),
+        QueryMsg::BidsSortedByTokenPrice {
+            collection,
+            token_id,
+            start_after,
+            limit,
+            descending,
+        } => to_binary(&query_bids_sorted_by_token_price(
+            deps,
+            api.addr_validate(&collection)?,
+            token_id,
+            start_after,
+            limit,
+            descending,
+        )?),
         QueryMsg::BidsByBidderSortedByExpiration {
             bidder,
             start_after,
@@ -528,6 +542,42 @@ pub fn reverse_query_bids_sorted_by_price(
         .collection_price
         .sub_prefix(collection)
         .range(deps.storage, None, end, Order::Descending)
+        .take(limit)
+        .map(|item| item.map(|(_, b)| b))
+        .collect::<StdResult<Vec<_>>>()?;
+
+    Ok(BidsResponse { bids })
+}
+
+pub fn query_bids_sorted_by_token_price(
+    deps: Deps,
+    collection: Addr,
+    token_id: u32,
+    start_after: Option<BidOffset>,
+    limit: Option<u32>,
+    descending: Option<bool>,
+) -> StdResult<BidsResponse> {
+    let start: Option<Bound<(u128, BidKey)>> = start_after.map(|offset| {
+        Bound::exclusive((
+            offset.price.u128(),
+            bid_key(&collection, offset.token_id, &offset.bidder),
+        ))
+    });
+
+    let limit = limit.unwrap_or(DEFAULT_QUERY_LIMIT).min(MAX_QUERY_LIMIT) as usize;
+
+    let mut order = Order::Descending;
+    if let Some(_descending) = descending {
+        if !_descending {
+            order = Order::Ascending;
+        }
+    };
+
+    let bids = bids()
+        .idx
+        .collection_token_price
+        .sub_prefix((collection, token_id))
+        .range(deps.storage, start, None, order)
         .take(limit)
         .map(|item| item.map(|(_, b)| b))
         .collect::<StdResult<Vec<_>>>()?;

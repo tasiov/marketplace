@@ -330,6 +330,15 @@ pub enum QueryMsg {
         start_before: Option<BidOffset>,
         limit: Option<u32>,
     },
+    /// Get all bids for a specific token, sorted by price
+    #[returns(BidsResponse)]
+    BidsSortedByTokenPrice {
+        collection: Collection,
+        token_id: TokenId,
+        start_after: Option<BidOffset>,
+        limit: Option<u32>,
+        descending: Option<bool>,
+    },
     /// Get data for a specific collection bid
     #[returns(CollectionBidResponse)]
     CollectionBid {
