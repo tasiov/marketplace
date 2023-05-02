@@ -8,7 +8,7 @@ use crate::msg::{
 };
 use crate::state::{
     ask_key, asks, bid_key, bids, collection_bid_key, collection_bids, BidKey, CollectionBidKey,
-    TokenId, ASK_HOOKS, BID_HOOKS, SALE_HOOKS, SUDO_PARAMS,
+    Order as Expiry, TokenId, ASK_HOOKS, BID_HOOKS, SALE_HOOKS, SUDO_PARAMS,
 };
 use cosmwasm_std::{to_binary, Addr, Binary, Deps, Env, Order, StdResult};
 use cw_storage_plus::{Bound, PrefixBound};
@@ -19,7 +19,7 @@ const DEFAULT_QUERY_LIMIT: u32 = 10;
 const MAX_QUERY_LIMIT: u32 = 100;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let api = deps.api;
 
     match msg {
@@ -151,13 +151,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             start_after,
             limit,
             descending,
+            include_expired,
         } => to_binary(&query_bids_sorted_by_token_price(
             deps,
+            env,
             api.addr_validate(&collection)?,
             token_id,
             start_after,
             limit,
             descending,
+            include_expired,
         )?),
         QueryMsg::BidsByBidderSortedByExpiration {
             bidder,
@@ -551,11 +554,13 @@ pub fn reverse_query_bids_sorted_by_price(
 
 pub fn query_bids_sorted_by_token_price(
     deps: Deps,
+    env: Env,
     collection: Addr,
     token_id: u32,
     start_after: Option<BidOffset>,
     limit: Option<u32>,
     descending: Option<bool>,
+    include_expired: Option<bool>,
 ) -> StdResult<BidsResponse> {
     let start: Option<Bound<(u128, BidKey)>> = start_after.map(|offset| {
         Bound::exclusive((
@@ -578,6 +583,13 @@ pub fn query_bids_sorted_by_token_price(
         .collection_token_price
         .sub_prefix((collection, token_id))
         .range(deps.storage, start, None, order)
+        .filter(|item| match item {
+            Ok((_, bid)) => match include_expired {
+                Some(true) => true,
+                _ => !bid.is_expired(&env.block),
+            },
+            Err(_) => true,
+        })
         .take(limit)
         .map(|item| item.map(|(_, b)| b))
         .collect::<StdResult<Vec<_>>>()?;

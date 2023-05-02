@@ -86,6 +86,7 @@ pub enum ExecuteMsg {
         token_id: TokenId,
         bidder: String,
         finder: Option<String>,
+        funds_recipient: Option<String>,
     },
     /// Reject a bid on an existing ask
     RejectBid {
@@ -107,6 +108,7 @@ pub enum ExecuteMsg {
         token_id: TokenId,
         bidder: String,
         finder: Option<String>,
+        funds_recipient: Option<String>,
     },
     /// Privileged operation to change the active state of an ask when an NFT is transferred
     SyncAsk {
@@ -338,6 +340,7 @@ pub enum QueryMsg {
         start_after: Option<BidOffset>,
         limit: Option<u32>,
         descending: Option<bool>,
+        include_expired: Option<bool>,
     },
     /// Get data for a specific collection bid
     #[returns(CollectionBidResponse)]

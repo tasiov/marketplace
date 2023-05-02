@@ -193,6 +193,7 @@ pub fn execute(
             token_id,
             bidder,
             finder,
+            funds_recipient,
         } => execute_accept_bid(
             deps,
             env,
@@ -201,6 +202,7 @@ pub fn execute(
             token_id,
             api.addr_validate(&bidder)?,
             maybe_addr(api, finder)?,
+            maybe_addr(api, funds_recipient)?,
         ),
         ExecuteMsg::RejectBid {
             collection,
@@ -246,6 +248,7 @@ pub fn execute(
             token_id,
             bidder,
             finder,
+            funds_recipient,
         } => execute_accept_collection_bid(
             deps,
             env,
@@ -254,6 +257,7 @@ pub fn execute(
             token_id,
             api.addr_validate(&bidder)?,
             maybe_addr(api, finder)?,
+            maybe_addr(api, funds_recipient)?,
         ),
         ExecuteMsg::SyncAsk {
             collection,
@@ -651,6 +655,7 @@ pub fn execute_accept_bid(
     token_id: TokenId,
     bidder: Addr,
     finder: Option<Addr>,
+    funds_recipient: Option<Addr>,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
     only_owner(deps.as_ref(), &info, &collection, token_id)?;
@@ -676,7 +681,7 @@ pub fn execute_accept_bid(
         expires_at: bid.expires_at,
         is_active: true,
         seller: info.sender.clone(),
-        funds_recipient: Some(info.sender),
+        funds_recipient: funds_recipient,
         reserve_for: None,
         finders_fee_bps: bid.finders_fee_bps,
     };
@@ -844,6 +849,7 @@ pub fn execute_accept_collection_bid(
     token_id: TokenId,
     bidder: Addr,
     finder: Option<Addr>,
+    funds_recipient: Option<Addr>,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
     only_owner(deps.as_ref(), &info, &collection, token_id)?;
@@ -870,7 +876,7 @@ pub fn execute_accept_collection_bid(
         expires_at: bid.expires_at,
         is_active: true,
         seller: info.sender.clone(),
-        funds_recipient: Some(info.sender.clone()),
+        funds_recipient: funds_recipient,
         reserve_for: None,
         finders_fee_bps: bid.finders_fee_bps,
     };
@@ -1119,10 +1125,10 @@ fn finalize_sale(
     let tx_fees = calculate_nft_sale_fees(
         price,
         params.trading_fee_percent,
-        seller_recipient,
-        finder,
+        &seller_recipient,
+        finder.as_ref(),
         ask.finders_fee_bps,
-        royalty_info,
+        royalty_info.as_ref(),
     )?;
 
     if let Some(royalty_fee) = &tx_fees.royalty_fee {

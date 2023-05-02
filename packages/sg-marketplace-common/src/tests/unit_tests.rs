@@ -4,10 +4,8 @@ use crate::{
 };
 
 use cosmwasm_std::{
-    coin,
-    testing::{mock_dependencies, mock_info},
-    to_binary, Addr, BankMsg, ContractResult, Decimal, Querier, QuerierResult, QuerierWrapper,
-    StdError, SystemResult, Uint128,
+    coin, testing::mock_dependencies, to_binary, Addr, BankMsg, ContractResult, Decimal, Querier,
+    QuerierResult, QuerierWrapper, StdError, SystemResult, Uint128,
 };
 use cw721::OwnerOfResponse;
 use mockall::*;
@@ -101,16 +99,24 @@ fn try_only_owner() {
 
     let querier_wrapper = QuerierWrapper::new(&mock);
 
-    let info = mock_info(buyer.as_ref(), &[]);
     assert_eq!(
         Err(StdError::generic_err("Unauthorized")),
-        only_owner(&querier_wrapper, &info, &collection, &token_id.to_string())
+        only_owner(
+            &querier_wrapper,
+            &Addr::unchecked(buyer),
+            &collection,
+            &token_id.to_string()
+        )
     );
 
-    let info = mock_info(creator.as_ref(), &[]);
     assert_eq!(
         Ok(()),
-        only_owner(&querier_wrapper, &info, &collection, &token_id.to_string())
+        only_owner(
+            &querier_wrapper,
+            &Addr::unchecked(creator),
+            &collection,
+            &token_id.to_string()
+        )
     );
 }
 
@@ -215,10 +221,10 @@ fn try_calculate_nft_sale_fees() {
     let fees = calculate_nft_sale_fees(
         sale_price,
         trading_fee_percent,
-        seller.clone(),
-        Some(finder.clone()),
+        &seller,
+        Some(&finder),
         Some(finders_fee_bps),
-        Some(royalty_info),
+        Some(&royalty_info),
     )
     .unwrap();
 
@@ -245,8 +251,8 @@ fn try_calculate_nft_sale_fees() {
     let fees = calculate_nft_sale_fees(
         sale_price,
         trading_fee_percent,
-        seller,
-        Some(finder),
+        &seller,
+        Some(&finder),
         None,
         None,
     )

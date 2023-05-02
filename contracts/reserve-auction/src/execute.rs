@@ -86,7 +86,7 @@ pub fn execute_create_auction(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    only_owner(&deps.querier, &info, &collection, token_id)?;
+    only_owner(&deps.querier, &info.sender, &collection, token_id)?;
     has_approval(
         &deps.querier,
         &env.contract.address,

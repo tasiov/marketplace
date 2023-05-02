@@ -127,10 +127,10 @@ pub fn settle_auction(
         let tx_fees = calculate_nft_sale_fees(
             _high_bid.coin.amount,
             marketplace_params.trading_fee_percent,
-            auction.seller,
+            &auction.seller,
             None,
             None,
-            royalty_info,
+            royalty_info.as_ref(),
         )?;
 
         response = payout_nft_sale_fees(response, tx_fees, None)?;

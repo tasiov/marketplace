@@ -149,6 +149,7 @@ fn set_auction_bids() {
         token_id,
         bidder: bidder.to_string(),
         finder: None,
+        funds_recipient: None,
     };
     let res = router.execute_contract(creator.clone(), marketplace.clone(), &accept_bid_msg, &[]);
     assert!(res.is_ok());
@@ -235,6 +236,7 @@ fn transfer_accept_bid() {
         token_id,
         bidder: bidder.to_string(),
         finder: None,
+        funds_recipient: None,
     };
     let res = router.execute_contract(owner.clone(), marketplace.clone(), &accept_bid_msg, &[]);
     assert!(res.is_ok());

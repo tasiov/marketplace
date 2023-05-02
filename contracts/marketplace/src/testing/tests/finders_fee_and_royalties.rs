@@ -121,6 +121,7 @@ fn try_bid_finders_fee() {
         token_id,
         bidder: bidder.to_string(),
         finder: Some(finder.to_string()),
+        funds_recipient: None,
     };
     let res = router.execute_contract(creator.clone(), marketplace.clone(), &accept_bid_msg, &[]);
     assert!(res.is_ok());

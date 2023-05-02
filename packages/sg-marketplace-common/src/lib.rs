@@ -1,8 +1,8 @@
 mod tests;
 
 use cosmwasm_std::{
-    coin, to_binary, Addr, Api, BankMsg, Coin, Decimal, Empty, MessageInfo, QuerierWrapper,
-    StdError, StdResult, Uint128, WasmMsg,
+    coin, to_binary, Addr, Api, BankMsg, Coin, Decimal, Empty, QuerierWrapper, StdError, StdResult,
+    Uint128, WasmMsg,
 };
 use cw721::{ApprovalResponse, Cw721ExecuteMsg, OwnerOfResponse};
 use cw721_base::helpers::Cw721Contract;
@@ -42,12 +42,12 @@ pub fn owner_of(
 
 pub fn only_owner(
     querier: &QuerierWrapper,
-    info: &MessageInfo,
+    sender: &Addr,
     collection: &Addr,
     token_id: &str,
 ) -> StdResult<()> {
     let owner_of_response = owner_of(querier, collection, token_id)?;
-    if owner_of_response.owner != info.sender {
+    if owner_of_response.owner != sender.to_string() {
         return Err(StdError::generic_err("Unauthorized"));
     }
     Ok(())
@@ -106,10 +106,10 @@ pub struct TransactionFees {
 pub fn calculate_nft_sale_fees(
     sale_price: Uint128,
     trading_fee_percent: Decimal,
-    seller: Addr,
-    finder: Option<Addr>,
+    seller: &Addr,
+    finder: Option<&Addr>,
     finders_fee_bps: Option<u64>,
-    royalty_info: Option<RoyaltyInfo>,
+    royalty_info: Option<&RoyaltyInfo>,
 ) -> StdResult<TransactionFees> {
     // Calculate Fair Burn
     let fair_burn_fee = sale_price * trading_fee_percent / Uint128::from(100u128);
@@ -126,7 +126,7 @@ pub fn calculate_nft_sale_fees(
         if finders_fee_amount > 0 {
             finders_fee = Some(TokenPayment {
                 coin: coin(finders_fee_amount, NATIVE_DENOM),
-                recipient: _finder,
+                recipient: _finder.clone(),
             });
             seller_payment = seller_payment.checked_sub(Uint128::from(finders_fee_amount))?;
         }
@@ -139,7 +139,7 @@ pub fn calculate_nft_sale_fees(
         if royalty_fee_amount > 0 {
             royalty_fee = Some(TokenPayment {
                 coin: coin(royalty_fee_amount, NATIVE_DENOM),
-                recipient: _royalty_info.payment_address,
+                recipient: _royalty_info.payment_address.clone(),
             });
             seller_payment = seller_payment.checked_sub(Uint128::from(royalty_fee_amount))?;
         }
@@ -148,7 +148,7 @@ pub fn calculate_nft_sale_fees(
     // Pay seller
     let seller_payment = TokenPayment {
         coin: coin(seller_payment.u128(), NATIVE_DENOM),
-        recipient: seller,
+        recipient: seller.clone(),
     };
 
     Ok(TransactionFees {
